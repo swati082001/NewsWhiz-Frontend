@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useEffect ,useState} from "react";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 import ReactMarkdown from "react-markdown";
@@ -10,10 +10,12 @@ const API = "http://localhost:3000/api/chat";
 function App() {
   const [sessionId] = useState(() => uuidv4());
   const [messages, setMessages] = useState([
-    { role: "bot", content: "Hi! I'm NewsWhiz. Ask me about the latest news." }
+    { role: "bot", content: "Hi! I'm NewsWhiz. Ask me about the latest news." },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const chatRef = useRef(null);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -22,20 +24,50 @@ function App() {
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setLoading(true);
+     setIsTyping(true);
 
     try {
       const res = await axios.post(API, {
         sessionId,
-        query: userMsg.content
+        query: userMsg.content,
       });
 
-      const botMsg = { role: "bot", content: res.data.reply };
-      setMessages((prev) => [...prev, botMsg]);
+      const botReply = res.data.reply || "No response.";
+      
+      let index = 0;
+    const typingMessage = { role: "bot", content: "" };
+    setMessages((prev) => [...prev, typingMessage]);
+
+    const typingInterval = setInterval(() => {
+      index++;
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          ...typingMessage,
+          content: botReply.slice(0, index),
+        };
+        return updated;
+      });
+
+      scrollToBottom(); 
+
+      if (index >= botReply.length) {
+        clearInterval(typingInterval);
+        setIsTyping(false); 
+        setLoading(false);
+      }
+    }, 20);
+
     } catch (err) {
       setMessages((prev) => [
         ...prev,
-        { role: "bot", content: "❌ Something went wrong while fetching the response." }
+        {
+          role: "bot",
+          content: "❌ Something went wrong while fetching the response.",
+        },
       ]);
+      setIsTyping(false);
+      setLoading(false);
     } finally {
       setLoading(false);
     }
@@ -44,9 +76,22 @@ function App() {
   const resetChat = async () => {
     await axios.post(`${API}/reset`, { sessionId });
     setMessages([
-      { role: "bot", content: "Hi! I'm NewsWhiz. Ask me about the latest news." }
+      {
+        role: "bot",
+        content: "Hi! I'm NewsWhiz. Ask me about the latest news.",
+      },
     ]);
   };
+
+  const scrollToBottom = () => {
+    if (chatRef.current) {
+      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   return (
     <div className="h-screen flex flex-col bg-gray-900 text-white">
