@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 
-const API = "http://localhost:3000/api/chat";
+const API = "https://newswhiz-backend.onrender.com/api/chat";
 
 function App() {
   const [sessionId] = useState(() => uuidv4());
