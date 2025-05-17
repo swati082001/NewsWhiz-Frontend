@@ -1,11 +1,9 @@
 import { useRef, useEffect ,useState} from "react";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
+import ChatBox from "./components/ChatBox";
 
-const API = "https://newswhiz-backend.onrender.com/api/chat";
+const API = import.meta.env.VITE_API_URL;
 
 function App() {
   const [sessionId] = useState(() => uuidv4());
@@ -27,7 +25,7 @@ function App() {
      setIsTyping(true);
 
     try {
-      const res = await axios.post(API, {
+      const res = await axios.post(`${API}/chat`, {
         sessionId,
         query: userMsg.content,
       });
@@ -63,7 +61,7 @@ function App() {
         ...prev,
         {
           role: "bot",
-          content: "❌ Something went wrong while fetching the response.",
+          content: "Something went wrong while fetching the response.",
         },
       ]);
       setIsTyping(false);
@@ -74,7 +72,7 @@ function App() {
   };
 
   const resetChat = async () => {
-    await axios.post(`${API}/reset`, { sessionId });
+    await axios.post(`${API}/chat/reset`, { sessionId });
     setMessages([
       {
         role: "bot",
@@ -109,26 +107,7 @@ function App() {
       </header>
 
       {/* Chat Window */}
-      <main className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`w-fit max-w-[80%] px-4 py-2 rounded-xl break-words ${
-              msg.role === "user"
-                ? "bg-blue-600 ml-auto text-right"
-                : "bg-gray-700"
-            }`}
-          >
-            <div className="prose prose-invert max-w-none text-white">
-              <ReactMarkdown
-                children={msg.content}
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeRaw]}
-              />
-            </div>
-          </div>
-        ))}
-      </main>
+       <ChatBox messages={messages}/>
 
       {/* Footer */}
       <footer className="p-4 border-t border-gray-700 bg-gray-900 sticky bottom-0 z-10">
